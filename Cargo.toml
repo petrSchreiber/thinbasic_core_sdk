@@ -1,0 +1,11 @@
+[package]
+name = "thinbasic"
+version = "0.1.0"
+authors = ["petrSchreiber <petrschreiber@gmail.com>"]
+description = "Rust crate for thinBasic Core SDK"
+license = "MIT"
+
+[dependencies]
+libloading = "0.5"
+winapi = { version = "0.3", features = ["winnt", "combaseapi", "oleauto", "roapi", "roerrorapi", "hstring", "winstring", "winerror", "restrictederrorinfo"] }
+ascii = "0.8.6"
