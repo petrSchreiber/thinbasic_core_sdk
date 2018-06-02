@@ -107,7 +107,22 @@ pub mod core
             thinbasic_loadsymbol(TBStr::from(symbol_name), return_type as i32, function_ptr, 1)
         }
     }
-    
+
+    #[allow(dead_code)]
+    pub fn add_string_equate(symbol_name: &str, symbol_value: &str) -> i32
+    {
+        unsafe
+        {
+            assert!(symbol_name.starts_with("$"));
+            let lib: libloading::Library = libloading::Library::new("thinCore.dll").unwrap();
+
+            // Placeholder values added as Rust does not support f80
+            let thinbasic_addequate: libloading::Symbol<unsafe extern fn(symbol_name: TBStr, symbol_value: TBStr, placeholderA: i64, placeholderA: i16, equate_type: i32) -> i32> = lib.get(b"thinBasic_AddEquate").unwrap();
+
+            // 0, 0 are placeholder values; 5 should enforce string type of equate
+            thinbasic_addequate(TBStr::from(symbol_name), TBStr::from(symbol_value), 0, 0, 5)
+        }
+    }
 
     /*
 
