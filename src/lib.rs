@@ -78,7 +78,7 @@ pub mod core
     #[allow(dead_code)]
     pub enum ReturnType
     {
-        None = 0,
+        NONE= 0,
         U8  =  1,
         U16 =  3,
         U32 =  4,       
