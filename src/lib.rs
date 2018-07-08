@@ -66,7 +66,7 @@ pub mod core
         }
 
         #[allow(dead_code)]
-        fn internal_to_string(&self) -> String {
+        pub fn to_string(&self) -> String {
             unsafe {
                 let len = self.len();
                 let slice: &[u16] = ::std::slice::from_raw_parts(self.0, len as usize);
@@ -78,15 +78,16 @@ pub mod core
     #[allow(dead_code)]
     pub enum ReturnType
     {
-        NONE= 0,
-        U8  =  1,
-        U16 =  3,
-        U32 =  4,       
-        I16 =  2,
-        I32 =  5,
-        I64 =  6,
-        F32 =  7,
-        F64 =  8
+        NONE  =  0,
+        U8    =  1,
+        U16   =  3,
+        U32   =  4,       
+        I16   =  2,
+        I32   =  5,
+        I64   =  6,
+        F32   =  7,
+        F64   =  8,
+        TBSTR = 30
     }
 
     /*
@@ -239,6 +240,20 @@ pub mod core
             thinbasic_parsedouble(&num);
 
             num
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn parse_tbstr() -> TBStr
+    {
+        unsafe
+        {
+            let lib: libloading::Library = libloading::Library::new("thinCore.dll").unwrap();
+            let thinbasic_parsestr: libloading::Symbol<unsafe extern fn(*const TBStr)> = lib.get(b"thinBasic_ParseStr").unwrap();
+            let text: TBStr = TBStr::from(" ");
+            thinbasic_parsestr(&text);
+
+            text
         }
     }
 
