@@ -11,68 +11,68 @@ pub mod core
     extern crate winapi;
     extern crate ascii;
 
-    /*
+    // Adjusting the signatures for our use
+    extern "system" {
+        pub fn SysAllocStringByteLen(
+            psz: *const u8,
+            len: usize,
+            ) -> *const u8;
 
-        Implementation of "ThinBASIC STRING" - TBstr - is tortured code from
-        BStr implementation made in https://github.com/contextfree/winrt-rust
+        pub fn SysFreeString(
+            bstrString: *const u8
+        );
 
-    */
+        pub fn SysStringByteLen(
+            bstr: *const u8
+        ) -> u32;    
+    }
 
-    use core::winapi::um::oleauto::{SysAllocStringByteLen, SysFreeString, SysStringLen};
+    // Custom TBStr
+    pub struct TBStr(*const u8);
 
-    pub struct TBStr(*mut u16);
-
+    // For creating from Rust str
     impl<'a> From<&'a str> for TBStr {
         
         fn from(str_text: &'a str) -> Self {
-            let max_ascii_length = str_text.chars().count();                            // Maximum length of ASCII string will not be bigger than original text
-            let mut byte_buffer: Vec<u8> = Vec::with_capacity(max_ascii_length);        // Preallocate to avoid reallocations
+            unsafe
+            {
+                let ascii_str = ascii::AsciiStr::from_ascii(str_text).unwrap();
+                let byte_slice = ascii_str.as_bytes();
+                let ptr = SysAllocStringByteLen(&byte_slice[0], ascii_str.len());
 
-            for str_char in str_text.chars() {                                          // For each wide char in str...         
-                if str_char.is_ascii()                                                  // If it is representable as ASCII...
-                {
-                    let ascii_char = ascii::AsciiChar::from(str_char);                  // Convert to byte and push to byte_buffer
-                    byte_buffer.push(ascii_char.unwrap().as_byte());
-                }
+                TBStr(ptr)
             }
-
-            let first_byte_of_byte_buffer = &byte_buffer[0] as *const _ as *const i8;   // Pointer to first item in our byte buffer, formed in a way SysAllocStringByteLen will love it
-            let total_string_data_length =  byte_buffer.len() as u32;                   // Total length of the buffer, just casted in a way SysAllocStringByteLen will love it
-            let tbstr = unsafe {
-                SysAllocStringByteLen(first_byte_of_byte_buffer,
-                                      total_string_data_length)
-            };
-            
-            TBStr(tbstr)                                                                // Filling the TBStr with the value returned by SysAllocStringByteLen
         }
     }
 
+    // For releasing
     impl Drop for TBStr {
         #[inline(always)]
         fn drop(&mut self) {
-            unsafe { SysFreeString(self.0 as *mut u16) };
+            unsafe
+            {
+                SysFreeString(self.0);
+            }
         }
     }
 
-    impl TBStr{
-        #[allow(dead_code)]
-        pub fn ptr(&self) -> &*mut u16 {
-            return &self.0
-        }
-
-        #[allow(dead_code)]
-        pub fn len(&self) -> u32 {        
-            unsafe { SysStringLen(self.0 as *mut u16) }
-        }
-
-        #[allow(dead_code)]
-        pub fn to_string(&self) -> String {
+    // Convenient, custom functions
+    impl TBStr
+    {
+        pub fn len(&self) -> u32 {
             unsafe {
-                let len = self.len();
-                let slice: &[u16] = ::std::slice::from_raw_parts(self.0, len as usize);
-                String::from_utf16_lossy(slice)
+                SysStringByteLen(self.0)
             }
         }
+        
+        pub fn to_string<'v>(&self) -> String {
+            unsafe {
+                let len = self.len();            
+                let slice: &[u8] = ::std::slice::from_raw_parts(self.0, len as usize);
+
+                String::from(::std::str::from_utf8(slice).unwrap())
+            }
+        }      
     }
 
     #[allow(dead_code)]
